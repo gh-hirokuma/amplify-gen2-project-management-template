@@ -3,38 +3,19 @@ import { redirect } from "next/navigation";
 
 import { list } from "aws-amplify/storage/server";
 
-import { DashboardInteractive } from "@/components/dashboard-interactive";
+import { getProjectFilesPrefix } from "@/lib/project-files";
+import { resolveSelectedProjectId } from "@/lib/selected-project";
+import { throwIfAmplifyErrors } from "@/server/amplify-errors";
 import {
   cookiesClient,
   getCurrentUserOrNull,
   runWithAmplifyServerContext,
-} from "@/lib/server/amplify-server-utils";
-import { getProjectFilesPrefix } from "@/lib/project-files";
-import { resolveSelectedProjectId } from "@/lib/selected-project";
+} from "@/server/amplify";
+import type { WorkspacePageData } from "@/features/workspace/types";
 
-type StoredFile = {
-  path: string;
-  size?: number;
-  lastModified?: string | null;
-};
-
-function presentErrors(errors: unknown) {
-  if (!Array.isArray(errors) || errors.length === 0) {
-    return;
-  }
-
-  const message = errors
-    .map((entry) =>
-      typeof entry === "object" && entry !== null && "message" in entry
-        ? String(entry.message)
-        : "Unknown data error",
-    )
-    .join(", ");
-
-  throw new Error(message);
-}
-
-async function loadDashboardData(requestedProjectId?: string) {
+export async function loadWorkspaceData(
+  requestedProjectId?: string,
+): Promise<WorkspacePageData> {
   const user = await getCurrentUserOrNull();
 
   if (!user) {
@@ -47,8 +28,8 @@ async function loadDashboardData(requestedProjectId?: string) {
       cookiesClient.models.Task.list(),
     ]);
 
-  presentErrors(projectErrors);
-  presentErrors(taskErrors);
+  throwIfAmplifyErrors(projectErrors);
+  throwIfAmplifyErrors(taskErrors);
 
   const sortedProjects = [...(projects ?? [])].sort((a, b) =>
     a.createdAt && b.createdAt
@@ -67,26 +48,7 @@ async function loadDashboardData(requestedProjectId?: string) {
     requestedProjectId,
   );
 
-  const serializableProjects = sortedProjects.map((project) => ({
-    id: project.id,
-    name: project.name,
-    description: project.description ?? null,
-    tone: project.tone ?? null,
-    createdAt: project.createdAt ?? null,
-    updatedAt: project.updatedAt ?? null,
-  }));
-
-  const serializableTasks = sortedTasks.map((task) => ({
-    id: task.id,
-    title: task.title,
-    note: task.note ?? null,
-    done: task.done,
-    projectId: task.projectId,
-    createdAt: task.createdAt ?? null,
-    updatedAt: task.updatedAt ?? null,
-  }));
-
-  let projectFiles: StoredFile[] = [];
+  let projectFiles: WorkspacePageData["projectFiles"] = [];
 
   if (selectedProjectId) {
     const listed = await runWithAmplifyServerContext({
@@ -116,19 +78,24 @@ async function loadDashboardData(requestedProjectId?: string) {
       username: user.username,
       loginId: user.signInDetails?.loginId ?? user.username,
     },
-    projects: serializableProjects,
-    tasks: serializableTasks,
+    projects: sortedProjects.map((project) => ({
+      id: project.id,
+      name: project.name,
+      description: project.description ?? null,
+      tone: project.tone ?? null,
+      createdAt: project.createdAt ?? null,
+      updatedAt: project.updatedAt ?? null,
+    })),
+    tasks: sortedTasks.map((task) => ({
+      id: task.id,
+      title: task.title,
+      note: task.note ?? null,
+      done: task.done,
+      projectId: task.projectId,
+      createdAt: task.createdAt ?? null,
+      updatedAt: task.updatedAt ?? null,
+    })),
     selectedProjectId,
     projectFiles,
   };
-}
-
-export async function Dashboard({
-  requestedProjectId,
-}: {
-  requestedProjectId?: string;
-}) {
-  const data = await loadDashboardData(requestedProjectId);
-
-  return <DashboardInteractive {...data} />;
 }

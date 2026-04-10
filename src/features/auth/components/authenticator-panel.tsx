@@ -6,8 +6,8 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Authenticator, useAuthenticator } from "@aws-amplify/ui-react";
 
-import { AuthShell } from "@/components/auth-shell";
 import { Card, CardContent } from "@/components/ui/card";
+import { AuthShell } from "@/features/auth/components/auth-shell";
 
 type AuthenticatorPanelProps = {
   mode: "login" | "signup";

@@ -6,7 +6,7 @@ import { fetchAuthSession, getCurrentUser } from "aws-amplify/auth/server";
 
 import type { Schema } from "@backend/data/resource";
 
-import outputs from "../../../amplify_outputs.json";
+import outputs from "../../amplify_outputs.json";
 
 export const { runWithAmplifyServerContext } = createServerRunner({
   config: outputs,

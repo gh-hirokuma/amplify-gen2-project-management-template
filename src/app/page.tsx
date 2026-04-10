@@ -1,4 +1,4 @@
-import { Dashboard } from "@/components/dashboard";
+import { WorkspacePage } from "@/features/workspace";
 
 export const dynamic = "force-dynamic";
 
@@ -9,5 +9,5 @@ export default async function Home({
 }) {
   const { project } = await searchParams;
 
-  return <Dashboard requestedProjectId={project} />;
+  return <WorkspacePage requestedProjectId={project} />;
 }

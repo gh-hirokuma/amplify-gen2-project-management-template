@@ -3,38 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
-import { cookiesClient, getCurrentUserOrNull } from "./amplify-server-utils";
-
-function presentErrors(errors: unknown) {
-  if (!Array.isArray(errors) || errors.length === 0) {
-    return;
-  }
-
-  const message = errors
-    .map((entry) =>
-      typeof entry === "object" && entry !== null && "message" in entry
-        ? String(entry.message)
-        : "Unknown data error",
-    )
-    .join(", ");
-
-  throw new Error(message);
-}
-
-function requiredString(formData: FormData, key: string) {
-  const value = formData.get(key);
-
-  if (typeof value !== "string" || value.trim().length === 0) {
-    throw new Error(`Missing field: ${key}`);
-  }
-
-  return value.trim();
-}
-
-function optionalString(formData: FormData, key: string) {
-  const value = formData.get(key);
-  return typeof value === "string" && value.trim().length > 0 ? value.trim() : undefined;
-}
+import type { Project } from "@/features/workspace/types";
+import { requiredString, optionalString } from "@/server/form-data";
+import { throwIfAmplifyErrors } from "@/server/amplify-errors";
+import { cookiesClient, getCurrentUserOrNull } from "@/server/amplify";
 
 async function requireAuthenticatedUser() {
   const user = await getCurrentUserOrNull();
@@ -48,7 +20,7 @@ async function requireAuthenticatedUser() {
 
 async function assertProjectAccess(projectId: string) {
   const { data, errors } = await cookiesClient.models.Project.get({ id: projectId });
-  presentErrors(errors);
+  throwIfAmplifyErrors(errors);
 
   if (!data) {
     throw new Error("Project not found.");
@@ -66,7 +38,7 @@ export async function createProjectAction(formData: FormData) {
     tone: "active",
   });
 
-  presentErrors(errors);
+  throwIfAmplifyErrors(errors);
   revalidatePath("/");
   return { projectId: data?.id ?? null };
 }
@@ -84,7 +56,7 @@ export async function createTaskAction(formData: FormData) {
     projectId,
   });
 
-  presentErrors(errors);
+  throwIfAmplifyErrors(errors);
   revalidatePath("/");
   return { projectId };
 }
@@ -101,7 +73,7 @@ export async function toggleTaskAction(formData: FormData) {
     done: !done,
   });
 
-  presentErrors(errors);
+  throwIfAmplifyErrors(errors);
   revalidatePath("/");
   return { projectId, taskId, done: !done };
 }
@@ -116,7 +88,7 @@ export async function deleteTaskAction(formData: FormData) {
     id: taskId,
   });
 
-  presentErrors(errors);
+  throwIfAmplifyErrors(errors);
   revalidatePath("/");
   return { projectId, taskId };
 }
@@ -125,14 +97,14 @@ export async function archiveProjectAction(formData: FormData) {
   await requireAuthenticatedUser();
 
   const projectId = requiredString(formData, "projectId");
-  const tone = requiredString(formData, "tone");
+  const tone = requiredString(formData, "tone") as NonNullable<Project["tone"]>;
 
   const { errors } = await cookiesClient.models.Project.update({
     id: projectId,
     tone: tone === "done" ? "active" : "done",
   });
 
-  presentErrors(errors);
+  throwIfAmplifyErrors(errors);
   revalidatePath("/");
   return { projectId, tone: tone === "done" ? "active" : "done" };
 }
