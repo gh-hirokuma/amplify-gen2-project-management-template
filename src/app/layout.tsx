@@ -1,22 +1,13 @@
+import "@aws-amplify/ui-react/styles.css";
 import type { Metadata } from "next";
-import { Fraunces, Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 
 import { ConfigureAmplify } from "@/components/configure-amplify";
 
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
-
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
 });
 
@@ -32,9 +23,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} antialiased`}
-      >
+      <body className={`${inter.variable} antialiased`}>
         <ConfigureAmplify />
         {children}
       </body>

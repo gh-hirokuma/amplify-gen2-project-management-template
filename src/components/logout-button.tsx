@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 
 import { signOut } from "aws-amplify/auth";
 
+import { configureAmplifyClient } from "@/lib/amplify-client";
 import { Button } from "@/components/ui/button";
 
 export function LogoutButton() {
@@ -14,6 +15,7 @@ export function LogoutButton() {
       className="h-11 rounded-full border border-white/12 bg-white/8 px-5 text-stone-50 hover:bg-white/14"
       variant="ghost"
       onClick={async () => {
+        configureAmplifyClient();
         await signOut();
         router.replace("/login");
       }}
