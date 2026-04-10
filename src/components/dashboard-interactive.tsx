@@ -193,20 +193,20 @@ export function DashboardInteractive({
   }
 
   return (
-    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(254,250,242,0.82),_rgba(254,250,242,0)_22%),linear-gradient(180deg,_#14110f_0%,_#1a1512_31%,_#efe7da_31%,_#ece5d8_100%)] px-4 py-4 text-stone-950 sm:px-6 sm:py-6">
+    <main className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(255,255,255,0.55),_rgba(255,255,255,0)_24%),linear-gradient(180deg,_#16120f_0%,_#211b16_28%,_#efe7da_28%,_#ece6dc_100%)] px-4 py-4 text-stone-950 sm:px-6 sm:py-6">
       <div className="mx-auto flex max-w-[1380px] flex-col gap-5">
-        <header className="overflow-hidden rounded-[2.2rem] bg-[linear-gradient(135deg,_#15110d_0%,_#1d1713_46%,_#29211c_100%)] px-6 py-7 text-stone-50 shadow-[0_30px_90px_-42px_rgba(0,0,0,0.82)] sm:px-8 sm:py-9">
+        <header className="overflow-hidden rounded-[1.85rem] bg-[linear-gradient(135deg,_#17130f_0%,_#201913_52%,_#2b221c_100%)] px-6 py-7 text-stone-50 shadow-[0_28px_72px_-44px_rgba(0,0,0,0.72)] sm:px-8 sm:py-8">
           <div className="flex flex-col gap-6 xl:flex-row xl:items-end xl:justify-between">
             <div className="max-w-3xl space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-amber-300/90">
+              <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-amber-300/90">
                 Authenticated workspace
               </p>
               <div className="space-y-3">
                 <div className="text-sm leading-7 text-stone-300 sm:text-base">{user.loginId}</div>
-                <h1 className="max-w-2xl font-heading text-4xl leading-[0.98] tracking-[-0.05em] text-stone-50 sm:text-6xl">
-                  Project と Task を片づけるための board
+                <h1 className="max-w-2xl text-[2.4rem] font-semibold leading-[0.94] tracking-[-0.06em] text-stone-50 sm:text-[4.4rem]">
+                  PROJECT DASHBOARD
                 </h1>
-                <p className="max-w-2xl text-sm leading-7 text-stone-300 sm:text-base">
+                <p className="max-w-2xl text-sm leading-7 text-stone-300 sm:text-[15px]">
                   ログイン UI は custom form のままにしつつ、Data、Storage、署名 URL の処理は
                   Next.js App Router の server component / server action / route handler で実行します。
                 </p>
@@ -214,14 +214,14 @@ export function DashboardInteractive({
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              <div className="rounded-[1.6rem] border border-white/10 bg-white/6 px-4 py-3 backdrop-blur">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-stone-400">
+              <div className="rounded-[1.2rem] border border-white/10 bg-white/6 px-4 py-3 backdrop-blur">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-400">
                   Active projects
                 </div>
                 <div className="mt-1 text-2xl font-semibold">{optimisticProjects.length}</div>
               </div>
-              <div className="rounded-[1.6rem] border border-white/10 bg-white/6 px-4 py-3 backdrop-blur">
-                <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-stone-400">
+              <div className="rounded-[1.2rem] border border-white/10 bg-white/6 px-4 py-3 backdrop-blur">
+                <div className="text-[10px] font-semibold uppercase tracking-[0.2em] text-stone-400">
                   Open tasks
                 </div>
                 <div className="mt-1 text-2xl font-semibold">
@@ -234,9 +234,9 @@ export function DashboardInteractive({
         </header>
 
         <section className="grid gap-5 xl:grid-cols-[320px_minmax(0,1fr)]">
-          <Card className="border-stone-200/80 bg-[linear-gradient(180deg,_rgba(249,241,230,0.96),_rgba(244,236,224,0.94))] shadow-[0_22px_64px_-46px_rgba(15,23,42,0.28)]">
+          <Card className="rounded-[1.6rem] border-stone-200/80 bg-[linear-gradient(180deg,_rgba(249,241,230,0.96),_rgba(244,236,224,0.94))] shadow-[0_18px_48px_-40px_rgba(15,23,42,0.2)]">
             <CardHeader className="space-y-3">
-              <CardTitle className="text-2xl tracking-[-0.03em]">Projects</CardTitle>
+              <CardTitle className="text-[1.45rem] font-semibold tracking-[-0.03em]">Projects</CardTitle>
               <p className="text-sm leading-7 text-stone-600">
                 作成、更新、選択はすべて server action と query-string ベースで処理します。
               </p>
@@ -257,30 +257,32 @@ export function DashboardInteractive({
                     return;
                   }
 
-                  updateOptimisticProjects({
-                    type: "create",
-                    project: {
-                      id: `optimistic-project-${Date.now()}`,
-                      name,
-                      description: description || null,
-                      tone: "active",
-                      createdAt: new Date().toISOString(),
-                      updatedAt: new Date().toISOString(),
-                    } as Project & { optimistic?: boolean },
-                  });
-
                   createProjectFormRef.current?.reset();
 
-                  startCreateProject(async () => {
-                    try {
-                      const result = await createProjectAction(formData);
-                      await refreshBoard(result.projectId);
-                    } catch (error) {
-                      setProjectError(
-                        error instanceof Error ? error.message : "Unable to create project.",
-                      );
-                      router.refresh();
-                    }
+                  startCreateProject(() => {
+                    updateOptimisticProjects({
+                      type: "create",
+                      project: {
+                        id: `optimistic-project-${Date.now()}`,
+                        name,
+                        description: description || null,
+                        tone: "active",
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                      } as Project & { optimistic?: boolean },
+                    });
+
+                    void (async () => {
+                      try {
+                        const result = await createProjectAction(formData);
+                        await refreshBoard(result.projectId);
+                      } catch (error) {
+                        setProjectError(
+                          error instanceof Error ? error.message : "Unable to create project.",
+                        );
+                        router.refresh();
+                      }
+                    })();
                   });
                 }}
               >
@@ -311,7 +313,7 @@ export function DashboardInteractive({
 
               <div className={`space-y-3 transition ${isCreatingProject ? "opacity-75" : "opacity-100"}`}>
                 {optimisticProjects.length === 0 ? (
-                  <div className="rounded-[1.5rem] border border-dashed border-stone-300 bg-white/60 px-4 py-5 text-sm leading-7 text-stone-500">
+                  <div className="rounded-[1.2rem] border border-dashed border-stone-300 bg-white/60 px-4 py-5 text-sm leading-7 text-stone-500">
                     まだ Project がありません。最初のひとつを作ると右側に Task リストが出ます。
                   </div>
                 ) : null}
@@ -324,22 +326,22 @@ export function DashboardInteractive({
                   return (
                     <Link
                       key={project.id}
-                      className={`block w-full rounded-[1.5rem] border px-4 py-4 text-left transition ${
+                      className={`block w-full rounded-[1.15rem] border px-4 py-4 text-left transition ${
                         active
-                          ? "border-stone-950 bg-[linear-gradient(180deg,_#17120e,_#231b16)] text-stone-50 shadow-[0_18px_50px_-30px_rgba(15,23,42,0.62)]"
+                          ? "border-stone-950 bg-[linear-gradient(180deg,_#17120e,_#231b16)] text-stone-50 shadow-[0_14px_34px_-24px_rgba(15,23,42,0.5)]"
                           : "border-stone-200/80 bg-white/86 text-stone-800 hover:border-stone-400 hover:bg-white"
                       }`}
                       href={`/?project=${encodeURIComponent(project.id)}`}
                     >
                       <div className="flex items-start justify-between gap-3">
                         <div className="space-y-1.5">
-                          <div className="text-lg font-semibold tracking-[-0.02em]">{project.name}</div>
+                          <div className="text-[1.02rem] font-semibold tracking-[-0.02em]">{project.name}</div>
                           <div className={`text-sm leading-6 ${active ? "text-stone-300" : "text-stone-500"}`}>
                             {project.description || "No description"}
                           </div>
                         </div>
                         <div
-                          className={`rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.22em] ${
+                          className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
                             active ? "bg-white/10 text-amber-200" : "bg-stone-100 text-stone-500"
                           }`}
                         >
@@ -347,7 +349,7 @@ export function DashboardInteractive({
                         </div>
                       </div>
                       <div
-                        className={`mt-4 flex items-center justify-between text-xs uppercase tracking-[0.24em] ${
+                        className={`mt-4 flex items-center justify-between text-[11px] uppercase tracking-[0.18em] ${
                           active ? "text-stone-400" : "text-stone-500"
                         }`}
                       >
@@ -362,10 +364,10 @@ export function DashboardInteractive({
           </Card>
 
           <div className="grid gap-5">
-            <Card className="border-stone-200/80 bg-[linear-gradient(180deg,_rgba(255,250,242,0.98),_rgba(251,247,240,0.96))] shadow-[0_22px_64px_-46px_rgba(15,23,42,0.28)]">
+            <Card className="rounded-[1.6rem] border-stone-200/80 bg-[linear-gradient(180deg,_rgba(255,250,242,0.98),_rgba(251,247,240,0.96))] shadow-[0_18px_48px_-40px_rgba(15,23,42,0.2)]">
               <CardHeader className="flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
                 <div className="space-y-3">
-                  <CardTitle className="text-3xl tracking-[-0.04em]">
+                  <CardTitle className="text-[2rem] font-semibold tracking-[-0.04em]">
                     {selectedProject?.name ?? "Pick a project"}
                   </CardTitle>
                   <p className="max-w-2xl text-sm leading-7 text-stone-600">
@@ -376,8 +378,8 @@ export function DashboardInteractive({
 
                 {selectedProject ? (
                   <div className="flex flex-wrap items-center gap-3">
-                    <div className="rounded-[1.45rem] border border-stone-200/80 bg-white/90 px-4 py-3">
-                      <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-stone-500">
+                    <div className="rounded-[1rem] border border-stone-200/80 bg-white/90 px-4 py-3">
+                      <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-500">
                         Progress
                       </div>
                       <div className="mt-1 text-lg font-semibold text-stone-900">
@@ -433,29 +435,31 @@ export function DashboardInteractive({
                       return;
                     }
 
-                    updateOptimisticTasks({
-                      type: "create",
-                      task: {
-                        id: `optimistic-task-${Date.now()}`,
-                        title,
-                        note: note || null,
-                        done: false,
-                        projectId: selectedProjectId,
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString(),
-                      } as Task & { optimistic?: boolean },
-                    });
-
                     createTaskFormRef.current?.reset();
 
-                    startTaskMutation(async () => {
-                      try {
-                        await createTaskAction(formData);
-                        router.refresh();
-                      } catch (error) {
-                        setTaskError(error instanceof Error ? error.message : "Unable to add task.");
-                        router.refresh();
-                      }
+                    startTaskMutation(() => {
+                      updateOptimisticTasks({
+                        type: "create",
+                        task: {
+                          id: `optimistic-task-${Date.now()}`,
+                          title,
+                          note: note || null,
+                          done: false,
+                          projectId: selectedProjectId,
+                          createdAt: new Date().toISOString(),
+                          updatedAt: new Date().toISOString(),
+                        } as Task & { optimistic?: boolean },
+                      });
+
+                      void (async () => {
+                        try {
+                          await createTaskAction(formData);
+                          router.refresh();
+                        } catch (error) {
+                          setTaskError(error instanceof Error ? error.message : "Unable to add task.");
+                          router.refresh();
+                        }
+                      })();
                     });
                   }}
                 >
@@ -498,13 +502,13 @@ export function DashboardInteractive({
 
                 <div className="space-y-3">
                   {!selectedProject ? (
-                    <div className="rounded-[1.5rem] border border-dashed border-stone-300 bg-stone-50 px-4 py-5 text-sm leading-7 text-stone-500">
+                    <div className="rounded-[1.2rem] border border-dashed border-stone-300 bg-stone-50 px-4 py-5 text-sm leading-7 text-stone-500">
                       左の Project を選ぶと Task を並べられます。
                     </div>
                   ) : null}
 
                   {selectedProject && selectedProjectTasks.length === 0 ? (
-                    <div className="rounded-[1.5rem] border border-dashed border-stone-300 bg-stone-50 px-4 py-5 text-sm leading-7 text-stone-500">
+                    <div className="rounded-[1.2rem] border border-dashed border-stone-300 bg-stone-50 px-4 py-5 text-sm leading-7 text-stone-500">
                       まだ Task がありません。次にやることを 1 件追加してください。
                     </div>
                   ) : null}
@@ -512,7 +516,7 @@ export function DashboardInteractive({
                   {selectedProjectTasks.map((task) => (
                     <div
                       key={task.id}
-                      className={`grid gap-3 rounded-[1.65rem] border px-4 py-4 transition sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-start ${
+                      className={`grid gap-3 rounded-[1.2rem] border px-4 py-4 transition sm:grid-cols-[auto_minmax(0,1fr)_auto] sm:items-start ${
                         task.done
                           ? "border-emerald-200/90 bg-[linear-gradient(180deg,_rgba(236,253,245,0.98),_rgba(225,247,237,0.9))]"
                           : "border-stone-200/80 bg-white/92"
@@ -530,22 +534,24 @@ export function DashboardInteractive({
                           formData.set("projectId", task.projectId);
                           formData.set("done", String(task.done));
 
-                          updateOptimisticTasks({
-                            type: "toggle",
-                            taskId: task.id,
-                            done: !task.done,
-                          });
+                          startTaskMutation(() => {
+                            updateOptimisticTasks({
+                              type: "toggle",
+                              taskId: task.id,
+                              done: !task.done,
+                            });
 
-                          startTaskMutation(async () => {
-                            try {
-                              await toggleTaskAction(formData);
-                              router.refresh();
-                            } catch (error) {
-                              setTaskError(
-                                error instanceof Error ? error.message : "Unable to update task.",
-                              );
-                              router.refresh();
-                            }
+                            void (async () => {
+                              try {
+                                await toggleTaskAction(formData);
+                                router.refresh();
+                              } catch (error) {
+                                setTaskError(
+                                  error instanceof Error ? error.message : "Unable to update task.",
+                                );
+                                router.refresh();
+                              }
+                            })();
                           });
                         }}
                       />
@@ -574,22 +580,24 @@ export function DashboardInteractive({
                             formData.set("projectId", task.projectId);
                             formData.set("done", String(task.done));
 
-                            updateOptimisticTasks({
-                              type: "toggle",
-                              taskId: task.id,
-                              done: !task.done,
-                            });
+                            startTaskMutation(() => {
+                              updateOptimisticTasks({
+                                type: "toggle",
+                                taskId: task.id,
+                                done: !task.done,
+                              });
 
-                            startTaskMutation(async () => {
-                              try {
-                                await toggleTaskAction(formData);
-                                router.refresh();
-                              } catch (error) {
-                                setTaskError(
-                                  error instanceof Error ? error.message : "Unable to update task.",
-                                );
-                                router.refresh();
-                              }
+                              void (async () => {
+                                try {
+                                  await toggleTaskAction(formData);
+                                  router.refresh();
+                                } catch (error) {
+                                  setTaskError(
+                                    error instanceof Error ? error.message : "Unable to update task.",
+                                  );
+                                  router.refresh();
+                                }
+                              })();
                             });
                           }}
                         >
@@ -604,21 +612,23 @@ export function DashboardInteractive({
                             formData.set("taskId", task.id);
                             formData.set("projectId", task.projectId);
 
-                            updateOptimisticTasks({
-                              type: "delete",
-                              taskId: task.id,
-                            });
+                            startTaskMutation(() => {
+                              updateOptimisticTasks({
+                                type: "delete",
+                                taskId: task.id,
+                              });
 
-                            startTaskMutation(async () => {
-                              try {
-                                await deleteTaskAction(formData);
-                                router.refresh();
-                              } catch (error) {
-                                setTaskError(
-                                  error instanceof Error ? error.message : "Unable to delete task.",
-                                );
-                                router.refresh();
-                              }
+                              void (async () => {
+                                try {
+                                  await deleteTaskAction(formData);
+                                  router.refresh();
+                                } catch (error) {
+                                  setTaskError(
+                                    error instanceof Error ? error.message : "Unable to delete task.",
+                                  );
+                                  router.refresh();
+                                }
+                              })();
                             });
                           }}
                         >
@@ -632,9 +642,9 @@ export function DashboardInteractive({
             </Card>
 
             <section className="grid gap-5 lg:grid-cols-3">
-              <Card className="border-stone-200/80 bg-[linear-gradient(180deg,_rgba(248,242,234,0.96),_rgba(244,238,229,0.94))] lg:col-span-2">
+              <Card className="rounded-[1.6rem] border-stone-200/80 bg-[linear-gradient(180deg,_rgba(248,242,234,0.96),_rgba(244,238,229,0.94))] shadow-[0_18px_48px_-40px_rgba(15,23,42,0.18)] lg:col-span-2">
                 <CardHeader className="space-y-3">
-                  <CardTitle className="text-xl tracking-[-0.03em]">Project files</CardTitle>
+                  <CardTitle className="text-[1.25rem] font-semibold tracking-[-0.03em]">Project files</CardTitle>
                   <p className="text-sm leading-7 text-stone-600">
                     アップロードは server action、署名 URL は server route から発行します。
                     ブラウザはフォーム送信と通常リンクだけで動きます。
@@ -660,41 +670,43 @@ export function DashboardInteractive({
                         return;
                       }
 
-                      updateOptimisticFiles({
-                        type: "upload",
-                        file: {
-                          path: `${selectedProjectId}/${Date.now()}-${file.name}`,
-                          size: file.size,
-                          lastModified: null,
-                          uploading: true,
-                        },
-                      });
-
                       uploadFormRef.current?.reset();
 
-                      startUpload(async () => {
-                        try {
-                          const response = await fetch("/api/files/upload", {
-                            method: "POST",
-                            body: formData,
-                          });
+                      startUpload(() => {
+                        updateOptimisticFiles({
+                          type: "upload",
+                          file: {
+                            path: `${selectedProjectId}/${Date.now()}-${file.name}`,
+                            size: file.size,
+                            lastModified: null,
+                            uploading: true,
+                          },
+                        });
 
-                          const payload = (await response.json()) as {
-                            error?: string;
-                            path?: string;
-                          };
+                        void (async () => {
+                          try {
+                            const response = await fetch("/api/files/upload", {
+                              method: "POST",
+                              body: formData,
+                            });
 
-                          if (!response.ok) {
-                            throw new Error(payload.error || "Unable to upload file.");
+                            const payload = (await response.json()) as {
+                              error?: string;
+                              path?: string;
+                            };
+
+                            if (!response.ok) {
+                              throw new Error(payload.error || "Unable to upload file.");
+                            }
+
+                            router.refresh();
+                          } catch (error) {
+                            setUploadError(
+                              error instanceof Error ? error.message : "Unable to upload file.",
+                            );
+                            router.refresh();
                           }
-
-                          router.refresh();
-                        } catch (error) {
-                          setUploadError(
-                            error instanceof Error ? error.message : "Unable to upload file.",
-                          );
-                          router.refresh();
-                        }
+                        })();
                       });
                     }}
                   >
@@ -740,13 +752,13 @@ export function DashboardInteractive({
 
                   <div className="space-y-3">
                     {!selectedProjectId ? (
-                      <div className="rounded-[1.5rem] border border-dashed border-stone-300 bg-stone-50 px-4 py-5 text-sm leading-7 text-stone-500">
+                      <div className="rounded-[1.2rem] border border-dashed border-stone-300 bg-stone-50 px-4 py-5 text-sm leading-7 text-stone-500">
                         まず Project を選んでください。
                       </div>
                     ) : null}
 
                     {selectedProjectId && optimisticFiles.length === 0 ? (
-                      <div className="rounded-[1.5rem] border border-dashed border-stone-300 bg-stone-50 px-4 py-5 text-sm leading-7 text-stone-500">
+                      <div className="rounded-[1.2rem] border border-dashed border-stone-300 bg-stone-50 px-4 py-5 text-sm leading-7 text-stone-500">
                         まだファイルがありません。最初の 1 件を S3 へアップロードしてください。
                       </div>
                     ) : null}
@@ -754,7 +766,7 @@ export function DashboardInteractive({
                     {optimisticFiles.map((file) => (
                       <div
                         key={file.path}
-                        className={`grid gap-3 rounded-[1.5rem] border border-stone-200 bg-white/90 px-4 py-4 transition sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center ${
+                        className={`grid gap-3 rounded-[1.2rem] border border-stone-200 bg-white/90 px-4 py-4 transition sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center ${
                           file.uploading ? "opacity-70" : "opacity-100"
                         }`}
                       >
@@ -784,20 +796,20 @@ export function DashboardInteractive({
                 </CardContent>
               </Card>
 
-              <Card className="border-stone-200/80 bg-[linear-gradient(180deg,_rgba(248,242,234,0.96),_rgba(244,238,229,0.94))]">
+              <Card className="rounded-[1.6rem] border-stone-200/80 bg-[linear-gradient(180deg,_rgba(248,242,234,0.96),_rgba(244,238,229,0.94))] shadow-[0_18px_48px_-40px_rgba(15,23,42,0.18)]">
                 <CardHeader>
-                  <CardTitle className="text-xl tracking-[-0.03em]">Current user</CardTitle>
+                  <CardTitle className="text-[1.25rem] font-semibold tracking-[-0.03em]">Current user</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 text-sm leading-7 text-stone-600">
                   <div>
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-stone-500">
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-500">
                       Username
                     </div>
                     <div className="mt-1 text-base font-medium text-stone-900">{user.username}</div>
                   </div>
                   <Separator />
                   <div>
-                    <div className="text-[11px] font-semibold uppercase tracking-[0.24em] text-stone-500">
+                    <div className="text-[10px] font-semibold uppercase tracking-[0.18em] text-stone-500">
                       Login
                     </div>
                     <div className="mt-1 text-base font-medium text-stone-900">{user.loginId}</div>
@@ -805,9 +817,9 @@ export function DashboardInteractive({
                 </CardContent>
               </Card>
 
-              <Card className="border-stone-200/80 bg-[linear-gradient(180deg,_rgba(248,242,234,0.96),_rgba(244,238,229,0.94))] lg:col-span-3">
+              <Card className="rounded-[1.6rem] border-stone-200/80 bg-[linear-gradient(180deg,_rgba(248,242,234,0.96),_rgba(244,238,229,0.94))] shadow-[0_18px_48px_-40px_rgba(15,23,42,0.18)] lg:col-span-3">
                 <CardHeader>
-                  <CardTitle className="text-xl tracking-[-0.03em]">Implementation notes</CardTitle>
+                  <CardTitle className="text-[1.25rem] font-semibold tracking-[-0.03em]">Implementation notes</CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-3 text-sm leading-7 text-stone-600">
                   <p>Task CRUD is now optimistic, so the board responds before the round-trip finishes.</p>

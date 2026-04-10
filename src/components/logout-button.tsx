@@ -12,7 +12,7 @@ export function LogoutButton() {
 
   return (
     <Button
-      className="h-11 rounded-full border border-white/12 bg-white/8 px-5 text-stone-50 hover:bg-white/14"
+      className="h-11 rounded-xl border border-white/12 bg-white/8 px-4 text-sm font-medium text-stone-50 hover:bg-white/14"
       variant="ghost"
       onClick={async () => {
         configureAmplifyClient();

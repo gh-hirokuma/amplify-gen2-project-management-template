@@ -4,7 +4,7 @@ import { fetchAuthSession } from "aws-amplify/auth/server";
 
 import { runWithAmplifyServerContext } from "@/lib/server/amplify-server-utils";
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const response = NextResponse.next();
 
   const authenticated = await runWithAmplifyServerContext({
@@ -29,7 +29,5 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/((?!api|_next/static|_next/image|favicon.ico|login|signup).*)",
-  ],
+  matcher: ["/((?!api|_next/static|_next/image|favicon.ico|login|signup).*)"],
 };

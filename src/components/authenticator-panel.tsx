@@ -126,25 +126,25 @@ export function AuthenticatorPanel({ mode }: AuthenticatorPanelProps) {
       <Card className="h-full border-0 bg-transparent shadow-none">
         <CardContent className="flex h-full flex-col space-y-6 p-5 sm:p-7">
           <div className="space-y-3">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.28em] text-slate-500">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.24em] text-slate-500">
               {isSignup ? "Account setup" : "Existing account"}
             </p>
-            <h2 className="text-4xl tracking-[-0.05em] text-slate-950">
+            <h2 className="text-[2.1rem] font-semibold tracking-[-0.05em] text-slate-950 sm:text-[2.6rem]">
               {isSignup ? "メール確認までここで完結" : "Welcome back"}
             </h2>
-            <p className="max-w-lg text-[15px] leading-8 text-slate-600">
+            <p className="max-w-lg text-[15px] leading-7 text-slate-600">
               Hosted UI は使わず、アプリ内の Authenticator UI で認証します。ログイン後の
               Data / Storage / signed URL は引き続き server-side で処理されます。
             </p>
           </div>
 
-          <div className="rounded-[1.75rem] border border-slate-200/80 bg-white/92 p-4 shadow-[0_20px_60px_-42px_rgba(15,23,42,0.34)] sm:p-5">
+          <div className="rounded-[1.35rem] border border-slate-200/80 bg-white/92 p-4 shadow-[0_20px_44px_-38px_rgba(15,23,42,0.2)] sm:p-5">
             <Authenticator.Provider>
               <AuthenticatorFlow mode={mode} />
             </Authenticator.Provider>
           </div>
 
-          <div className="rounded-[1.6rem] border border-slate-200/80 bg-[linear-gradient(180deg,_rgba(246,248,251,0.96),_rgba(241,244,248,0.82))] p-4 text-sm leading-8 text-slate-600">
+          <div className="rounded-[1.35rem] border border-slate-200/80 bg-[linear-gradient(180deg,_rgba(246,248,251,0.96),_rgba(241,244,248,0.82))] p-4 text-sm leading-7 text-slate-600">
             {isSignup
               ? "確認コードが届かない場合は迷惑メールを確認してください。登録済みの場合はログイン画面からそのままサインインできます。"
               : "確認コード入力が済んでいない場合は、サインアップ画面から登録を完了してください。"}
