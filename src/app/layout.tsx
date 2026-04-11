@@ -2,8 +2,6 @@ import "@aws-amplify/ui-react/styles.css";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 
-import { ConfigureAmplify } from "@/components/configure-amplify";
-
 import "./globals.css";
 
 const inter = Inter({
@@ -24,7 +22,6 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body className={`${inter.variable} antialiased`}>
-        <ConfigureAmplify />
         {children}
       </body>
     </html>
