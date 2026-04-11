@@ -9,11 +9,13 @@ import {
   createProjectAction,
   createTaskAction,
   deleteTaskAction,
+  getProjectFileUrlAction,
   reorderProjectsAction,
   reorderTasksAction,
   toggleTaskAction,
   updateProjectAction,
   updateTaskAction,
+  uploadProjectFileAction,
 } from "@/features/workspace/server/workspace-actions";
 import { ProjectFilesPanel } from "@/features/workspace/components/project-files-panel";
 import { ProjectSidebar } from "@/features/workspace/components/project-sidebar";
@@ -67,9 +69,11 @@ export function WorkspaceInteractive({
   const [isMutatingTask, startTaskMutation] = useTransition();
   const [isUpdatingProject, startProjectUpdate] = useTransition();
   const [isUploadingFile, startUpload] = useTransition();
+  const [isOpeningFile, startOpenFile] = useTransition();
   const [taskError, setTaskError] = useState<string | null>(null);
   const [projectError, setProjectError] = useState<string | null>(null);
   const [uploadError, setUploadError] = useState<string | null>(null);
+  const [openingFilePath, setOpeningFilePath] = useState<string | null>(null);
 
   const [optimisticProjects, updateOptimisticProjects] = useOptimistic(
     projects,
@@ -472,23 +476,37 @@ export function WorkspaceInteractive({
 
       void (async () => {
         try {
-          const response = await fetch("/api/files/upload", {
-            method: "POST",
-            body: formData,
-          });
-
-          const payload = (await response.json()) as {
-            error?: string;
-          };
-
-          if (!response.ok) {
-            throw new Error(payload.error || "Unable to upload file.");
-          }
-
+          await uploadProjectFileAction(formData);
           router.refresh();
         } catch (error) {
           setUploadError(error instanceof Error ? error.message : "Unable to upload file.");
           router.refresh();
+        }
+      })();
+    });
+  }
+
+  function handleOpenFile(path: string) {
+    if (!selectedProjectId) {
+      return;
+    }
+
+    setUploadError(null);
+    const formData = new FormData();
+    formData.set("projectId", selectedProjectId);
+    formData.set("path", path);
+
+    startOpenFile(() => {
+      setOpeningFilePath(path);
+
+      void (async () => {
+        try {
+          const { url } = await getProjectFileUrlAction(formData);
+          window.location.assign(url);
+        } catch (error) {
+          setUploadError(error instanceof Error ? error.message : "Unable to open file.");
+        } finally {
+          setOpeningFilePath(null);
         }
       })();
     });
@@ -536,14 +554,16 @@ export function WorkspaceInteractive({
             />
 
             <section className="grid gap-5 lg:grid-cols-3">
-              <ProjectFilesPanel
-                selectedProjectId={selectedProjectId}
-                files={optimisticFiles}
-                uploadError={uploadError}
-                isUploadingFile={isUploadingFile}
-                uploadFormRef={uploadFormRef}
-                onUploadFile={handleUploadFile}
-              />
+        <ProjectFilesPanel
+          selectedProjectId={selectedProjectId}
+          files={optimisticFiles}
+          uploadError={uploadError}
+          isUploadingFile={isUploadingFile}
+          openingFilePath={isOpeningFile ? openingFilePath : null}
+          uploadFormRef={uploadFormRef}
+          onUploadFile={handleUploadFile}
+          onOpenFile={handleOpenFile}
+        />
               <WorkspaceSideCards user={user} />
             </section>
           </div>

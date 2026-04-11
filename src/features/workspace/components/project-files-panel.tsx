@@ -31,15 +31,19 @@ export function ProjectFilesPanel({
   files,
   uploadError,
   isUploadingFile,
+  openingFilePath,
   uploadFormRef,
   onUploadFile,
+  onOpenFile,
 }: {
   selectedProjectId: string | null;
   files: StoredFile[];
   uploadError: string | null;
   isUploadingFile: boolean;
+  openingFilePath: string | null;
   uploadFormRef: RefObject<HTMLFormElement | null>;
   onUploadFile: (event: FormEvent<HTMLFormElement>) => void;
+  onOpenFile: (path: string) => void;
 }) {
   return (
     <Card className="rounded-[1.6rem] border-stone-200/80 bg-[linear-gradient(180deg,_rgba(248,242,234,0.96),_rgba(244,238,229,0.94))] shadow-[0_18px_48px_-40px_rgba(15,23,42,0.18)] lg:col-span-2">
@@ -48,8 +52,7 @@ export function ProjectFilesPanel({
           Project files
         </CardTitle>
         <p className="text-sm leading-7 text-stone-600">
-          アップロードは server route、署名 URL は別の server route から発行します。ブラウザは
-          `fetch(FormData)` と通常リンクだけで動きます。
+          アップロードも署名 URL 取得も Server Action で処理します。API Route は使いません。
         </p>
       </CardHeader>
       <CardContent className="space-y-5">
@@ -121,13 +124,18 @@ export function ProjectFilesPanel({
                   Preparing URL...
                 </div>
               ) : (
-                <a
-                  href={`/api/files/open?projectId=${encodeURIComponent(selectedProjectId ?? "")}&path=${encodeURIComponent(file.path)}`}
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={openingFilePath === file.path}
+                  onClick={() => onOpenFile(file.path)}
                 >
-                  <Button type="button" variant="outline">
-                    Open signed URL
-                  </Button>
-                </a>
+                  <SpinnerLabel
+                    pending={openingFilePath === file.path}
+                    idle="Open signed URL"
+                    busy="Opening..."
+                  />
+                </Button>
               )}
             </div>
           ))}

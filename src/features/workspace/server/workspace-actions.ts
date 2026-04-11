@@ -1,12 +1,22 @@
 "use server";
 
+import { Buffer } from "node:buffer";
+
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 
+import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+
+import outputs from "../../../../amplify_outputs.json";
 import type { Project } from "@/features/workspace/types";
+import { buildProjectFilePath } from "@/lib/project-files";
 import { requiredString, optionalString } from "@/server/form-data";
 import { throwIfAmplifyErrors } from "@/server/amplify-errors";
 import { cookiesClient, getCurrentUserOrNull } from "@/server/amplify";
+
+const s3Client = new S3Client({
+  region: outputs.storage.aws_region,
+});
 
 async function requireAuthenticatedUser() {
   const user = await getCurrentUserOrNull();
@@ -27,6 +37,17 @@ async function assertProjectAccess(projectId: string) {
   }
 
   return data;
+}
+
+function isFileLike(value: FormDataEntryValue | null): value is File {
+  return (
+    (typeof File !== "undefined" && value instanceof File) ||
+    (!!value &&
+      typeof value === "object" &&
+      "name" in value &&
+      "size" in value &&
+      "arrayBuffer" in value)
+  );
 }
 
 function parseOrder(formData: FormData, key: string) {
@@ -213,4 +234,54 @@ export async function reorderProjectsAction(formData: FormData) {
 
   revalidatePath("/");
   return { projectId: orderedIds[0] ?? null };
+}
+
+export async function uploadProjectFileAction(formData: FormData) {
+  await requireAuthenticatedUser();
+
+  const projectId = requiredString(formData, "projectId");
+  const file = formData.get("file");
+  await assertProjectAccess(projectId);
+
+  if (!isFileLike(file) || file.size === 0) {
+    throw new Error("Select a file before uploading.");
+  }
+
+  const path = buildProjectFilePath({
+    projectId,
+    fileName: file.name,
+  });
+
+  await s3Client.send(
+    new PutObjectCommand({
+      Bucket: outputs.storage.bucket_name,
+      Key: path,
+      Body: Buffer.from(await file.arrayBuffer()),
+      ContentType: file.type || "application/octet-stream",
+    }),
+  );
+
+  revalidatePath("/");
+  return { projectId, path };
+}
+
+export async function getProjectFileUrlAction(formData: FormData) {
+  await requireAuthenticatedUser();
+
+  const projectId = requiredString(formData, "projectId");
+  const path = requiredString(formData, "path");
+  await assertProjectAccess(projectId);
+
+  const { data, errors } = await cookiesClient.queries.getSignedProjectFileUrl({
+    projectId,
+    path,
+  });
+
+  throwIfAmplifyErrors(errors);
+
+  if (!data?.url) {
+    throw new Error("Signed URL not available.");
+  }
+
+  return { url: data.url };
 }
