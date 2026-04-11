@@ -32,15 +32,17 @@ export async function loadWorkspaceData(
   throwIfAmplifyErrors(taskErrors);
 
   const sortedProjects = [...(projects ?? [])].sort((a, b) =>
-    a.createdAt && b.createdAt
+    (a.sortOrder ?? Number.MAX_SAFE_INTEGER) - (b.sortOrder ?? Number.MAX_SAFE_INTEGER) ||
+    (a.createdAt && b.createdAt
       ? a.createdAt.localeCompare(b.createdAt)
-      : a.name.localeCompare(b.name),
+      : a.name.localeCompare(b.name)),
   );
 
   const sortedTasks = [...(tasks ?? [])].sort((a, b) =>
-    a.createdAt && b.createdAt
+    (a.sortOrder ?? Number.MAX_SAFE_INTEGER) - (b.sortOrder ?? Number.MAX_SAFE_INTEGER) ||
+    (a.createdAt && b.createdAt
       ? a.createdAt.localeCompare(b.createdAt)
-      : a.title.localeCompare(b.title),
+      : a.title.localeCompare(b.title)),
   );
 
   const selectedProjectId = resolveSelectedProjectId(
@@ -82,6 +84,7 @@ export async function loadWorkspaceData(
       id: project.id,
       name: project.name,
       description: project.description ?? null,
+      sortOrder: project.sortOrder ?? null,
       tone: project.tone ?? null,
       createdAt: project.createdAt ?? null,
       updatedAt: project.updatedAt ?? null,
@@ -90,6 +93,8 @@ export async function loadWorkspaceData(
       id: task.id,
       title: task.title,
       note: task.note ?? null,
+      dueDate: task.dueDate ?? null,
+      sortOrder: task.sortOrder ?? null,
       done: task.done,
       projectId: task.projectId,
       createdAt: task.createdAt ?? null,

@@ -7,6 +7,7 @@ const schema = a.schema({
       .model({
         name: a.string().required(),
         description: a.string(),
+        sortOrder: a.integer(),
         tone: a.enum(["backlog", "active", "paused", "done"]),
         tasks: a.hasMany("Task", "projectId"),
       })
@@ -15,6 +16,8 @@ const schema = a.schema({
       .model({
         title: a.string().required(),
         note: a.string(),
+        dueDate: a.string(),
+        sortOrder: a.integer(),
         done: a.boolean().required(),
         projectId: a.id().required(),
         project: a.belongsTo("Project", "projectId"),

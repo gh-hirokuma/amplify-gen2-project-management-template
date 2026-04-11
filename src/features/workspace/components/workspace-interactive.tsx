@@ -9,7 +9,11 @@ import {
   createProjectAction,
   createTaskAction,
   deleteTaskAction,
+  reorderProjectsAction,
+  reorderTasksAction,
   toggleTaskAction,
+  updateProjectAction,
+  updateTaskAction,
 } from "@/features/workspace/server/workspace-actions";
 import { ProjectFilesPanel } from "@/features/workspace/components/project-files-panel";
 import { ProjectSidebar } from "@/features/workspace/components/project-sidebar";
@@ -25,12 +29,27 @@ import type {
 
 type TaskOptimisticAction =
   | { type: "create"; task: Task }
+  | { type: "update"; taskId: string; patch: Partial<Task> }
   | { type: "toggle"; taskId: string; done: boolean }
-  | { type: "delete"; taskId: string };
+  | { type: "delete"; taskId: string }
+  | { type: "reorder"; orderedIds: string[] };
 
 type FileOptimisticAction = { type: "upload"; file: StoredFile };
 
-type ProjectOptimisticAction = { type: "create"; project: Project };
+type ProjectOptimisticAction =
+  | { type: "create"; project: Project }
+  | { type: "update"; projectId: string; patch: Partial<Project> }
+  | { type: "reorder"; orderedIds: string[] };
+
+function reorderByIds<T extends { id: string }>(items: T[], orderedIds: string[]) {
+  const orderMap = new Map(orderedIds.map((id, index) => [id, index]));
+
+  return [...items].sort((left, right) => {
+    const leftOrder = orderMap.get(left.id) ?? Number.MAX_SAFE_INTEGER;
+    const rightOrder = orderMap.get(right.id) ?? Number.MAX_SAFE_INTEGER;
+    return leftOrder - rightOrder;
+  });
+}
 
 export function WorkspaceInteractive({
   user,
@@ -59,6 +78,22 @@ export function WorkspaceInteractive({
         return [action.project, ...currentProjects];
       }
 
+      if (action.type === "update") {
+        return currentProjects.map((project) =>
+          project.id === action.projectId ? { ...project, ...action.patch } : project,
+        );
+      }
+
+      if (action.type === "reorder") {
+        return reorderByIds(
+          currentProjects.map((project) => ({
+            ...project,
+            sortOrder: action.orderedIds.indexOf(project.id),
+          })),
+          action.orderedIds,
+        );
+      }
+
       return currentProjects;
     },
   );
@@ -70,6 +105,12 @@ export function WorkspaceInteractive({
         return [...currentTasks, action.task];
       }
 
+      if (action.type === "update") {
+        return currentTasks.map((task) =>
+          task.id === action.taskId ? { ...task, ...action.patch } : task,
+        );
+      }
+
       if (action.type === "toggle") {
         return currentTasks.map((task) =>
           task.id === action.taskId ? { ...task, done: action.done } : task,
@@ -78,6 +119,13 @@ export function WorkspaceInteractive({
 
       if (action.type === "delete") {
         return currentTasks.filter((task) => task.id !== action.taskId);
+      }
+
+      if (action.type === "reorder") {
+        return currentTasks.map((task) => {
+          const nextIndex = action.orderedIds.indexOf(task.id);
+          return nextIndex >= 0 ? { ...task, sortOrder: nextIndex } : task;
+        });
       }
 
       return currentTasks;
@@ -101,11 +149,10 @@ export function WorkspaceInteractive({
   const selectedProjectTasks = optimisticTasks
     .filter((task) => task.projectId === selectedProjectId)
     .sort((a, b) => {
-      if (a.done !== b.done) {
-        return a.done ? 1 : -1;
-      }
-
-      return (a.createdAt ?? "").localeCompare(b.createdAt ?? "");
+      return (
+        (a.sortOrder ?? Number.MAX_SAFE_INTEGER) - (b.sortOrder ?? Number.MAX_SAFE_INTEGER) ||
+        (a.createdAt ?? "").localeCompare(b.createdAt ?? "")
+      );
     });
 
   const completedCount = selectedProjectTasks.filter((task) => task.done).length;
@@ -139,6 +186,7 @@ export function WorkspaceInteractive({
           id: `optimistic-project-${Date.now()}`,
           name,
           description: description || null,
+          sortOrder: -1,
           tone: "active",
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
@@ -170,6 +218,7 @@ export function WorkspaceInteractive({
     const formData = new FormData(event.currentTarget);
     const title = String(formData.get("title") ?? "").trim();
     const note = String(formData.get("note") ?? "").trim();
+    const dueDate = String(formData.get("dueDate") ?? "").trim();
 
     if (!title) {
       setTaskError("Task title is required.");
@@ -185,6 +234,8 @@ export function WorkspaceInteractive({
           id: `optimistic-task-${Date.now()}`,
           title,
           note: note || null,
+          dueDate: dueDate || null,
+          sortOrder: selectedProjectTasks.length,
           done: false,
           projectId: selectedProjectId,
           createdAt: new Date().toISOString(),
@@ -220,6 +271,62 @@ export function WorkspaceInteractive({
       } catch {
         router.refresh();
       }
+    });
+  }
+
+  function handleUpdateProject(projectId: string, nextName: string, nextDescription: string) {
+    const name = nextName.trim();
+
+    if (!name) {
+      setProjectError("Project name is required.");
+      return;
+    }
+
+    setProjectError(null);
+    const formData = new FormData();
+    formData.set("projectId", projectId);
+    formData.set("name", name);
+    formData.set("description", nextDescription.trim());
+
+    startProjectUpdate(() => {
+      updateOptimisticProjects({
+        type: "update",
+        projectId,
+        patch: {
+          name,
+          description: nextDescription.trim() || null,
+        },
+      });
+
+      void (async () => {
+        try {
+          await updateProjectAction(formData);
+          router.refresh();
+        } catch (error) {
+          setProjectError(
+            error instanceof Error ? error.message : "Unable to update project.",
+          );
+          router.refresh();
+        }
+      })();
+    });
+  }
+
+  function handleReorderProjects(orderedProjectIds: string[]) {
+    const formData = new FormData();
+    formData.set("orderedProjectIds", JSON.stringify(orderedProjectIds));
+
+    startProjectUpdate(() => {
+      updateOptimisticProjects({ type: "reorder", orderedIds: orderedProjectIds });
+
+      void (async () => {
+        try {
+          await reorderProjectsAction(formData);
+          router.refresh();
+        } catch {
+          router.refresh();
+        }
+      })();
     });
   }
 
@@ -265,6 +372,69 @@ export function WorkspaceInteractive({
           router.refresh();
         } catch (error) {
           setTaskError(error instanceof Error ? error.message : "Unable to delete task.");
+          router.refresh();
+        }
+      })();
+    });
+  }
+
+  function handleUpdateTask(task: Task, patch: Partial<Task>) {
+    const title = (patch.title ?? task.title).trim();
+
+    if (!title) {
+      setTaskError("Task title is required.");
+      return;
+    }
+
+    setTaskError(null);
+    const formData = new FormData();
+    formData.set("taskId", task.id);
+    formData.set("projectId", task.projectId);
+    formData.set("title", title);
+    formData.set("note", (patch.note ?? task.note ?? "").trim());
+    formData.set("dueDate", (patch.dueDate ?? task.dueDate ?? "").trim());
+
+    startTaskMutation(() => {
+      updateOptimisticTasks({
+        type: "update",
+        taskId: task.id,
+        patch: {
+          title,
+          note: (patch.note ?? task.note ?? "").trim() || null,
+          dueDate: (patch.dueDate ?? task.dueDate ?? "").trim() || null,
+        },
+      });
+
+      void (async () => {
+        try {
+          await updateTaskAction(formData);
+          router.refresh();
+        } catch (error) {
+          setTaskError(error instanceof Error ? error.message : "Unable to update task.");
+          router.refresh();
+        }
+      })();
+    });
+  }
+
+  function handleReorderTasks(orderedTaskIds: string[]) {
+    if (!selectedProjectId) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("projectId", selectedProjectId);
+    formData.set("orderedTaskIds", JSON.stringify(orderedTaskIds));
+
+    startTaskMutation(() => {
+      updateOptimisticTasks({ type: "reorder", orderedIds: orderedTaskIds });
+
+      void (async () => {
+        try {
+          await reorderTasksAction(formData);
+          router.refresh();
+        } catch (error) {
+          setTaskError(error instanceof Error ? error.message : "Unable to reorder tasks.");
           router.refresh();
         }
       })();
@@ -340,8 +510,10 @@ export function WorkspaceInteractive({
             selectedProjectId={selectedProjectId}
             projectError={projectError}
             isCreatingProject={isCreatingProject}
+            isUpdatingProject={isUpdatingProject}
             createProjectFormRef={createProjectFormRef}
             onCreateProject={handleCreateProject}
+            onReorderProjects={handleReorderProjects}
           />
 
           <div className="grid gap-5">
@@ -355,9 +527,12 @@ export function WorkspaceInteractive({
               taskError={taskError}
               createTaskFormRef={createTaskFormRef}
               onCreateTask={handleCreateTask}
+              onUpdateProject={handleUpdateProject}
               onToggleProjectTone={handleToggleProjectTone}
               onToggleTask={handleToggleTask}
+              onUpdateTask={handleUpdateTask}
               onDeleteTask={handleDeleteTask}
+              onReorderTasks={handleReorderTasks}
             />
 
             <section className="grid gap-5 lg:grid-cols-3">

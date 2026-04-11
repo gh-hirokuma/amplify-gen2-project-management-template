@@ -1,12 +1,13 @@
 import Link from "next/link";
-import type { FormEvent, RefObject } from "react";
+import { GripVertical } from "lucide-react";
+import { useState } from "react";
+import type { DragEvent, FormEvent, RefObject } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { SpinnerLabel } from "@/features/workspace/components/spinner-label";
 import type { Project, Task } from "@/features/workspace/types";
 
 const toneLabels: Record<NonNullable<Project["tone"]>, string> = {
@@ -22,17 +23,40 @@ export function ProjectSidebar({
   selectedProjectId,
   projectError,
   isCreatingProject,
+  isUpdatingProject,
   createProjectFormRef,
   onCreateProject,
+  onReorderProjects,
 }: {
   projects: Project[];
   tasks: Task[];
   selectedProjectId: string | null;
   projectError: string | null;
   isCreatingProject: boolean;
+  isUpdatingProject: boolean;
   createProjectFormRef: RefObject<HTMLFormElement | null>;
   onCreateProject: (event: FormEvent<HTMLFormElement>) => void;
+  onReorderProjects: (orderedProjectIds: string[]) => void;
 }) {
+  const [draggedProjectId, setDraggedProjectId] = useState<string | null>(null);
+
+  function handleProjectDrop(targetProjectId: string) {
+    if (!draggedProjectId || draggedProjectId === targetProjectId) {
+      return;
+    }
+
+    const orderedIds = projects.map((project) => project.id);
+    const fromIndex = orderedIds.indexOf(draggedProjectId);
+    const toIndex = orderedIds.indexOf(targetProjectId);
+
+    if (fromIndex < 0 || toIndex < 0) {
+      return;
+    }
+
+    orderedIds.splice(toIndex, 0, orderedIds.splice(fromIndex, 1)[0]);
+    onReorderProjects(orderedIds);
+  }
+
   return (
     <Card className="rounded-[1.6rem] border-stone-200/80 bg-[linear-gradient(180deg,_rgba(249,241,230,0.96),_rgba(244,236,224,0.94))] shadow-[0_18px_48px_-40px_rgba(15,23,42,0.2)]">
       <CardHeader className="space-y-3">
@@ -42,6 +66,11 @@ export function ProjectSidebar({
         <p className="text-sm leading-7 text-stone-600">
           作成、更新、選択はすべて server action と query-string ベースで処理します。
         </p>
+        {isCreatingProject ? (
+          <div className="text-[11px] font-medium uppercase tracking-[0.16em] text-stone-500">
+            Syncing...
+          </div>
+        ) : null}
       </CardHeader>
       <CardContent className="space-y-6">
         <form ref={createProjectFormRef} className="space-y-4" onSubmit={onCreateProject}>
@@ -69,22 +98,14 @@ export function ProjectSidebar({
               {projectError}
             </div>
           ) : null}
-          <Button className="h-11 w-full" type="submit" disabled={isCreatingProject}>
-            <SpinnerLabel
-              pending={isCreatingProject}
-              idle="Create project"
-              busy="Creating..."
-            />
+          <Button className="h-11 w-full" type="submit">
+            Create project
           </Button>
         </form>
 
         <Separator />
 
-        <div
-          className={`space-y-3 transition ${
-            isCreatingProject ? "opacity-75" : "opacity-100"
-          }`}
-        >
+        <div className="space-y-3 transition">
           {projects.length === 0 ? (
             <div className="rounded-[1.2rem] border border-dashed border-stone-300 bg-white/60 px-4 py-5 text-sm leading-7 text-stone-500">
               まだ Project がありません。最初のひとつを作ると右側に Task リストが出ます。
@@ -97,45 +118,74 @@ export function ProjectSidebar({
             const active = project.id === selectedProjectId;
 
             return (
-              <Link
+              <div
                 key={project.id}
                 className={`block w-full rounded-[1.15rem] border px-4 py-4 text-left transition ${
                   active
                     ? "border-stone-950 bg-[linear-gradient(180deg,_#17120e,_#231b16)] text-stone-50 shadow-[0_14px_34px_-24px_rgba(15,23,42,0.5)]"
                     : "border-stone-200/80 bg-white/86 text-stone-800 hover:border-stone-400 hover:bg-white"
-                }`}
-                href={`/?project=${encodeURIComponent(project.id)}`}
+                } ${
+                  draggedProjectId === project.id ? "opacity-50" : ""
+                } ${isUpdatingProject ? "cursor-progress" : ""}`}
+                onDragOver={(event: DragEvent<HTMLDivElement>) => event.preventDefault()}
+                onDrop={(event: DragEvent<HTMLDivElement>) => {
+                  event.preventDefault();
+                  handleProjectDrop(project.id);
+                  setDraggedProjectId(null);
+                }}
               >
-                <div className="flex items-start justify-between gap-3">
-                  <div className="space-y-1.5">
-                    <div className="text-[1.02rem] font-semibold tracking-[-0.02em]">
-                      {project.name}
+                <div className="flex items-start gap-3">
+                  <button
+                    aria-label={`${project.name} をドラッグして並び替え`}
+                    className={`mt-1 inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full border ${
+                      active
+                        ? "border-white/15 bg-white/10 text-stone-200"
+                        : "border-stone-200 bg-stone-50 text-stone-500 hover:bg-stone-100"
+                    } ${isUpdatingProject ? "cursor-progress" : "cursor-grab"}`}
+                    draggable
+                    type="button"
+                    onDragEnd={() => setDraggedProjectId(null)}
+                    onDragStart={() => setDraggedProjectId(project.id)}
+                  >
+                    <GripVertical className="size-4" />
+                  </button>
+
+                  <Link
+                    className="block min-w-0 flex-1"
+                    href={`/?project=${encodeURIComponent(project.id)}`}
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0 space-y-1.5">
+                        <div className="text-[1.02rem] font-semibold tracking-[-0.02em]">
+                          {project.name}
+                        </div>
+                        <div
+                          className={`text-sm leading-6 ${
+                            active ? "text-stone-300" : "text-stone-500"
+                          }`}
+                        >
+                          {project.description || "No description"}
+                        </div>
+                      </div>
+                      <div
+                        className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
+                          active ? "bg-white/10 text-amber-200" : "bg-stone-100 text-stone-500"
+                        }`}
+                      >
+                        {toneLabels[project.tone ?? "backlog"]}
+                      </div>
                     </div>
                     <div
-                      className={`text-sm leading-6 ${
-                        active ? "text-stone-300" : "text-stone-500"
+                      className={`mt-4 flex items-center justify-between text-[11px] uppercase tracking-[0.18em] ${
+                        active ? "text-stone-400" : "text-stone-500"
                       }`}
                     >
-                      {project.description || "No description"}
+                      <span>{openCount} open</span>
+                      <span>{projectTasks.length} total</span>
                     </div>
-                  </div>
-                  <div
-                    className={`rounded-full px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] ${
-                      active ? "bg-white/10 text-amber-200" : "bg-stone-100 text-stone-500"
-                    }`}
-                  >
-                    {toneLabels[project.tone ?? "backlog"]}
-                  </div>
+                  </Link>
                 </div>
-                <div
-                  className={`mt-4 flex items-center justify-between text-[11px] uppercase tracking-[0.18em] ${
-                    active ? "text-stone-400" : "text-stone-500"
-                  }`}
-                >
-                  <span>{openCount} open</span>
-                  <span>{projectTasks.length} total</span>
-                </div>
-              </Link>
+              </div>
             );
           })}
         </div>

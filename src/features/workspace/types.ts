@@ -7,6 +7,7 @@ export type Project = {
   id: string;
   name: string;
   description: string | null;
+  sortOrder: number | null;
   tone: "backlog" | "active" | "paused" | "done" | null;
   createdAt: string | null;
   updatedAt: string | null;
@@ -16,6 +17,8 @@ export type Task = {
   id: string;
   title: string;
   note: string | null;
+  dueDate: string | null;
+  sortOrder: number | null;
   done: boolean;
   projectId: string;
   createdAt: string | null;
