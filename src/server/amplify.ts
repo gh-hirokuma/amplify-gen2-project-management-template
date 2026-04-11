@@ -22,15 +22,13 @@ export async function getCurrentUserOrNull() {
     nextServerContext: { cookies },
     operation: async (contextSpec) => {
       try {
-        const [user, session] = await Promise.all([
-          getCurrentUser(contextSpec),
-          fetchAuthSession(contextSpec),
-        ]);
+        const session = await fetchAuthSession(contextSpec);
 
         if (!session.tokens?.accessToken || !session.tokens?.idToken) {
           return null;
         }
 
+        const user = await getCurrentUser(contextSpec);
         return user;
       } catch {
         return null;
