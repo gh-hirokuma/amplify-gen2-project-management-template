@@ -2,7 +2,7 @@ import { cookies } from "next/headers";
 
 import { createServerRunner } from "@aws-amplify/adapter-nextjs";
 import { generateServerClientUsingCookies } from "@aws-amplify/adapter-nextjs/api";
-import { fetchAuthSession, getCurrentUser } from "aws-amplify/auth/server";
+import { getCurrentUser } from "aws-amplify/auth/server";
 
 import type { Schema } from "@backend/data/resource";
 
@@ -22,19 +22,26 @@ export async function getCurrentUserOrNull() {
     nextServerContext: { cookies },
     operation: async (contextSpec) => {
       try {
-        const session = await fetchAuthSession(contextSpec);
-
-        if (!session.tokens?.accessToken || !session.tokens?.idToken) {
-          return null;
-        }
-
-        const user = await getCurrentUser(contextSpec);
-        return user;
+        return await getCurrentUser(contextSpec);
       } catch {
         return null;
       }
     },
   });
+}
+
+export function isUnauthenticatedError(error: unknown) {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  return (
+    error.name === "UserUnAuthenticatedException" ||
+    error.message === "Unauthorized" ||
+    error.message.includes("User needs to be authenticated") ||
+    error.message.includes("No current user") ||
+    error.message.includes("Unauthenticated request")
+  );
 }
 
 export async function getAuthenticatedUser() {
