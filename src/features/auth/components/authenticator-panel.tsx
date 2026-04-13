@@ -1,13 +1,12 @@
 "use client";
 
-import "@/lib/amplify-client";
-
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Authenticator, useAuthenticator } from "@aws-amplify/ui-react";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { AuthShell } from "@/features/auth/components/auth-shell";
+import { configureAmplifyClient } from "@/lib/amplify-client";
 
 type AuthenticatorPanelProps = {
   mode: "login" | "signup";
@@ -16,6 +15,10 @@ type AuthenticatorPanelProps = {
 function AuthenticatorFlow({ mode }: AuthenticatorPanelProps) {
   const router = useRouter();
   const { user } = useAuthenticator((context) => [context.user]);
+
+  useEffect(() => {
+    configureAmplifyClient();
+  }, []);
 
   useEffect(() => {
     if (user) {

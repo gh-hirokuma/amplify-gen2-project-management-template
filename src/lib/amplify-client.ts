@@ -10,7 +10,13 @@ import { CookieStorage, parseAmplifyConfig } from "aws-amplify/utils";
 
 import outputs from "../../amplify_outputs.json";
 
+let isConfigured = false;
+
 export function configureAmplifyClient() {
+  if (isConfigured) {
+    return;
+  }
+
   const resolvedConfig = parseAmplifyConfig(outputs);
   const secure =
     typeof window !== "undefined" && window.location.protocol === "https:";
@@ -33,6 +39,6 @@ export function configureAmplifyClient() {
       ),
     },
   });
-}
 
-configureAmplifyClient();
+  isConfigured = true;
+}
